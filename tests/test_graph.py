@@ -58,17 +58,14 @@ def _make_test_source(text):
 class TestBuildGraph(unittest.TestCase):
     """Тесты построения графа через DFS."""
 
-    def setUp(self):
-        """setUp"""
-        self.path = _make_test_source("A B C\nB D\nC D\nD\n")
-
-    def tearDown(self):
-        """tearDown"""
-        os.unlink(self.path)
-
     def _source(self):
-        """_source"""
-        return TestRepoSource(self.path)
+        """Создаёт временный тестовый граф и источник на его основе.
+
+        Временный файл удаляется автоматически после теста через addCleanup.
+        """
+        path = _make_test_source("A B C\nB D\nC D\nD\n")
+        self.addCleanup(os.unlink, path)
+        return TestRepoSource(path)
 
     def test_builds_all_nodes(self):
         """test_builds_all_nodes"""
@@ -78,9 +75,8 @@ class TestBuildGraph(unittest.TestCase):
             self.assertIn(name, nodes)
 
     def test_respects_max_depth(self):
-        """test_respects_max_depth"""
+        """При глубине 1 от A доходим до B и C, но не до D."""
         graph = build_graph(self._source(), "A", max_depth=1)
-        # при глубине 1 от A доходим до B и C, но не до D
         self.assertIn("B", graph.nodes())
         self.assertNotIn("D", graph.nodes())
 

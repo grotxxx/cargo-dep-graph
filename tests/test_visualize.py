@@ -23,44 +23,45 @@ def _make_source(text):
 class TestVisualize(unittest.TestCase):
     """Тесты генерации PlantUML и SVG."""
 
-    def setUp(self):
-        """setUp"""
-        self.path = _make_source("A B C\nB D\nC\nD\n")
-        self.graph = build_graph(TestRepoSource(self.path), "A", 5)
+    def _graph(self):
+        """Строит граф по временному тестовому файлу.
 
-    def tearDown(self):
-        """tearDown"""
-        os.unlink(self.path)
+        Временный файл удаляется автоматически после теста через addCleanup.
+        """
+        path = _make_source("A B C\nB D\nC\nD\n")
+        self.addCleanup(os.unlink, path)
+        return build_graph(TestRepoSource(path), "A", 5)
 
     def test_plantuml_markers(self):
         """test_plantuml_markers"""
-        text = to_plantuml(self.graph)
+        text = to_plantuml(self._graph())
         self.assertTrue(text.startswith("@startuml"))
         self.assertTrue(text.endswith("@enduml"))
 
     def test_plantuml_contains_edges(self):
         """test_plantuml_contains_edges"""
-        text = to_plantuml(self.graph)
+        text = to_plantuml(self._graph())
         self.assertIn("-->", text)
 
     def test_svg_root_tag(self):
         """test_svg_root_tag"""
-        svg = to_svg(self.graph, "A")
+        svg = to_svg(self._graph(), "A")
         self.assertIn("<svg", svg)
         self.assertIn("</svg>", svg)
 
     def test_svg_contains_nodes(self):
         """test_svg_contains_nodes"""
-        svg = to_svg(self.graph, "A")
+        svg = to_svg(self._graph(), "A")
         for name in ("A", "B", "C", "D"):
             self.assertIn(f">{name}<", svg)
 
     def test_save_svg_file(self):
         """test_save_svg_file"""
+        graph = self._graph()
         out = tempfile.NamedTemporaryFile(suffix=".svg", delete=False)
         out.close()
         try:
-            save_svg(self.graph, "A", out.name)
+            save_svg(graph, "A", out.name)
             with open(out.name, encoding="utf-8") as handle:
                 content = handle.read()
             self.assertIn("<svg", content)
